@@ -33,7 +33,8 @@ jobs:
           echo "Selected already-present major: ${pre_major:-9}"
 
       - name: Setup dotnet (request already-present runtime major)
-        uses: akv-platform/setup-dotnet@install-runtime-only        with:
+        uses: akv-platform/setup-dotnet@install-runtime-only        
+        with:
           dotnet-runtime: '${{ steps.pre.outputs.pre_major }}.0.x'
 
       - name: CLI still works + runtime present (no corruption)
@@ -57,7 +58,8 @@ jobs:
         os: [ubuntu-latest, windows-latest, macos-latest]
     steps:
       - name: Setup dotnet (SDK 10 + runtime 10 overlap)
-        uses: akv-platform/setup-dotnet@install-runtime-only        with:
+        uses: akv-platform/setup-dotnet@install-runtime-only        
+        with:
           dotnet-version: '10.0.x'
           dotnet-runtime: '10.0.x'
       - name: Verify no corruption
@@ -80,7 +82,8 @@ jobs:
         os: [ubuntu-latest, windows-latest, macos-latest]
     steps:
       - name: Setup dotnet (SDK 10 + older runtimes 8 & 9)
-        uses: akv-platform/setup-dotnet@install-runtime-only        with:
+        uses: akv-platform/setup-dotnet@install-runtime-only        
+        with:
           dotnet-version: '10.0.x'
           dotnet-runtime: |
             8.0.x
@@ -107,7 +110,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Setup dotnet (duplicates + Latest/latest)
-        uses: akv-platform/setup-dotnet@install-runtime-only        with:
+        uses: akv-platform/setup-dotnet@install-runtime-only        
+        with:
           dotnet-runtime: |
             9.0.x
             9.0.x
@@ -129,7 +133,8 @@ jobs:
         os: [ubuntu-latest, windows-latest, macos-latest]
     steps:
       - name: Setup dotnet (runtime 9 only)
-        uses: akv-platform/setup-dotnet@install-runtime-only        with:
+        uses: akv-platform/setup-dotnet@install-runtime-only        
+        with:
           dotnet-runtime: '9.0.x'
       - name: Verify NETCore.App AND AspNetCore.App present
         shell: bash
@@ -145,7 +150,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Setup dotnet (exact 8.0.0)
-        uses: akv-platform/setup-dotnet@install-runtime-only        with:
+        uses: akv-platform/setup-dotnet@install-runtime-only        
+        with:
           dotnet-runtime: '8.0.0'
       - name: Verify exact version installed
         run: |
@@ -161,7 +167,8 @@ jobs:
     steps:
       - name: Setup dotnet (runtime only)
         id: setup
-        uses: akv-platform/setup-dotnet@install-runtime-only        with:
+        uses: akv-platform/setup-dotnet@install-runtime-only        
+        with:
           dotnet-runtime: '9.0.x'
       - name: Assert dotnet-version output is set
         shell: bash
@@ -180,7 +187,8 @@ jobs:
       - name: Setup dotnet (invalid runtime) — expected to FAIL
         id: badrun
         continue-on-error: true
-        uses: akv-platform/setup-dotnet@install-runtime-only        with:
+        uses: akv-platform/setup-dotnet@install-runtime-only        
+        with:
           dotnet-runtime: 'not-a-version'
       - name: Assert the step failed
         run: |
@@ -202,7 +210,8 @@ jobs:
         os: [ubuntu-latest, windows-latest, macos-latest]
     steps:
       - name: Setup dotnet (SDK 10 + runtimes 8 & 9)
-        uses: akv-platform/setup-dotnet@install-runtime-only        with:
+        uses: akv-platform/setup-dotnet@install-runtime-only        
+        with:
           dotnet-version: '10.0.x'
           dotnet-runtime: |
             8.0.x
@@ -269,7 +278,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Setup dotnet (SDK only)
-        uses: akv-platform/setup-dotnet@install-runtime-only        with:
+        uses: akv-platform/setup-dotnet@install-runtime-only        
+        with:
           dotnet-version: '8.0.x'
       - name: Verify SDK installed
         run: |
