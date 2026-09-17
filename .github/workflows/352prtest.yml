@@ -1,4 +1,4 @@
-name: dotnet-runtime conflict & edge-case matrix
+name: runtime-only conflict & edge-case matrix
 
 on:
   workflow_dispatch:
@@ -35,7 +35,7 @@ jobs:
       - name: Setup dotnet (request already-present runtime major)
         uses: akv-platform/setup-dotnet@install-runtime-only        
         with:
-          dotnet-runtime: '${{ steps.pre.outputs.pre_major }}.0.x'
+          runtime-only: '${{ steps.pre.outputs.pre_major }}.0.x'
 
       - name: CLI still works + runtime present (no corruption)
         shell: bash
@@ -61,7 +61,7 @@ jobs:
         uses: akv-platform/setup-dotnet@install-runtime-only        
         with:
           dotnet-version: '10.0.x'
-          dotnet-runtime: '10.0.x'
+          runtime-only: '10.0.x'
       - name: Verify no corruption
         shell: bash
         run: |
@@ -85,7 +85,7 @@ jobs:
         uses: akv-platform/setup-dotnet@install-runtime-only        
         with:
           dotnet-version: '10.0.x'
-          dotnet-runtime: |
+          runtime-only: |
             8.0.x
             9.0.x
       - name: CLI reports latest (10.x), all runtimes present
@@ -101,7 +101,7 @@ jobs:
           done
 
   # ---------------------------------------------------------------------------
-  # 4) EDGE: duplicate versions + mixed casing of 'latest' in dotnet-runtime.
+  # 4) EDGE: duplicate versions + mixed casing of 'latest' in runtime-only.
   #    Verifies dedup (installRuntime should be called once per unique value).
   #    We can't easily count internal calls from here, so we assert the run
   #    succeeds and the versions resolve without error.
@@ -112,7 +112,7 @@ jobs:
       - name: Setup dotnet (duplicates + Latest/latest)
         uses: akv-platform/setup-dotnet@install-runtime-only        
         with:
-          dotnet-runtime: |
+          runtime-only: |
             9.0.x
             9.0.x
             latest
@@ -135,7 +135,7 @@ jobs:
       - name: Setup dotnet (runtime 9 only)
         uses: akv-platform/setup-dotnet@install-runtime-only        
         with:
-          dotnet-runtime: '9.0.x'
+          runtime-only: '9.0.x'
       - name: Verify NETCore.App AND AspNetCore.App present
         shell: bash
         run: |
@@ -152,7 +152,7 @@ jobs:
       - name: Setup dotnet (exact 8.0.0)
         uses: akv-platform/setup-dotnet@install-runtime-only        
         with:
-          dotnet-runtime: '8.0.0'
+          runtime-only: '8.0.0'
       - name: Verify exact version installed
         run: |
           dotnet --list-runtimes
@@ -160,7 +160,7 @@ jobs:
 
   # ---------------------------------------------------------------------------
   # 7) EDGE: output — 'dotnet-version' output must be set from the runtime
-  #    version when ONLY dotnet-runtime is provided (regression for review #2).
+  #    version when ONLY runtime-only is provided (regression for review #2).
   # ---------------------------------------------------------------------------
   output-from-runtime-only:
     runs-on: ubuntu-latest
@@ -169,7 +169,7 @@ jobs:
         id: setup
         uses: akv-platform/setup-dotnet@install-runtime-only        
         with:
-          dotnet-runtime: '9.0.x'
+          runtime-only: '9.0.x'
       - name: Assert dotnet-version output is set
         shell: bash
         run: |
@@ -178,8 +178,8 @@ jobs:
             || { echo "::error::dotnet-version output was empty for runtime-only install"; exit 1; }
 
   # ---------------------------------------------------------------------------
-  # 8) NEGATIVE: invalid dotnet-runtime value must fail with a message that
-  #    references 'dotnet-runtime' (regression for review #3).
+  # 8) NEGATIVE: invalid runtime-only value must fail with a message that
+  #    references 'runtime-only' (regression for review #3).
   # ---------------------------------------------------------------------------
   invalid-runtime-message:
     runs-on: ubuntu-latest
@@ -189,13 +189,13 @@ jobs:
         continue-on-error: true
         uses: akv-platform/setup-dotnet@install-runtime-only        
         with:
-          dotnet-runtime: 'not-a-version'
+          runtime-only: 'not-a-version'
       - name: Assert the step failed
         run: |
           if [ "${{ steps.badrun.outcome }}" != "failure" ]; then
-            echo "::error::invalid dotnet-runtime should have failed the action"; exit 1
+            echo "::error::invalid runtime-only should have failed the action"; exit 1
           fi
-          echo "Action failed as expected for invalid dotnet-runtime input."
+          echo "Action failed as expected for invalid runtime-only input."
 
   # ---------------------------------------------------------------------------
   # 9) END-TO-END: build a real multi-target test project and RUN it on the
@@ -213,7 +213,7 @@ jobs:
         uses: akv-platform/setup-dotnet@install-runtime-only        
         with:
           dotnet-version: '10.0.x'
-          dotnet-runtime: |
+          runtime-only: |
             8.0.x
             9.0.x
 
@@ -272,7 +272,7 @@ jobs:
         run: dotnet test -c Release -f net9.0 --no-build
 
   # ---------------------------------------------------------------------------
-  # 10) BACKWARD-COMPAT: SDK only, no dotnet-runtime — behavior unchanged.
+  # 10) BACKWARD-COMPAT: SDK only, no runtime-only — behavior unchanged.
   # ---------------------------------------------------------------------------
   sdk-only-backcompat:
     runs-on: ubuntu-latest
