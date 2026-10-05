@@ -1,0 +1,35 @@
+name: Test skip-lts-prepass on a clean install dir
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        skip: [false, true]
+    env:
+      # Empty folder = "clean machine": no dotnet executable, no SDKs
+      DOTNET_INSTALL_DIR: ${{ github.workspace }}/.dotnet-clean
+    steps:
+      - name: Setup .NET (PR branch)
+        uses: v-chiranjib-swain/setup-dotnet@issue-642-optin
+        with:
+          dotnet-version: '9.0.203'
+          skip-lts-prepass: ${{ matrix.skip }}
+
+      - name: Verify dotnet executable and SDK
+        shell: pwsh
+        run: |
+          $d   = $env:DOTNET_INSTALL_DIR
+          $exe = Join-Path $d ($IsWindows ? 'dotnet.exe' : 'dotnet')
+          Write-Host "Contents of ${d}:"; Get-ChildItem $d | Select-Object -ExpandProperty Name
+          if (-not (Test-Path $exe)) {
+            Write-Error "dotnet executable is MISSING in $d (skip-lts-prepass=${{ matrix.skip }})"
+            exit 1
+          }
+          & $exe --list-sdks
+          & $exe --info
