@@ -150,7 +150,9 @@ jobs:
           dotnet-version: '9.0.203'
           skip-lts-prepass: 'yes'
       - if: steps.bad.outcome != 'failure'
-        run: { echo "Invalid boolean was accepted"; exit 1; }
+        run: |
+          echo "Invalid boolean was accepted"
+          exit 1
       - uses: v-chiranjib-swain/setup-dotnet@issue-642-optin
         with:
           dotnet-version: '9.0.203'
