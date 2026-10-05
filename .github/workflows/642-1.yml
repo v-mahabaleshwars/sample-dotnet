@@ -1,0 +1,160 @@
+name: PR2 skip-lts-prepass checks
+
+on:
+  workflow_dispatch:
+
+env:
+  ACTION_REF: v-chiranjib-swain/setup-dotnet@issue-642-optin
+
+jobs:
+  # 1. Main check: does the pre-pass run (skip=false) or not (skip=true)? Clean folder, all 3 OSes.
+  clean-dir-prepass:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        skip: [false, true]
+    env:
+      DOTNET_INSTALL_DIR: ${{ github.workspace }}/.dn
+    steps:
+      - id: setup
+        uses: v-chiranjib-swain/setup-dotnet@issue-642-optin
+        with:
+          dotnet-version: '9.0.203'
+          skip-lts-prepass: ${{ matrix.skip }}
+      - shell: pwsh
+        run: |
+          $d = $env:DOTNET_INSTALL_DIR
+          $exe = Join-Path $d ($IsWindows ? 'dotnet.exe' : 'dotnet')
+          if (-not (Test-Path $exe)) { throw "dotnet executable missing" }
+          $sdks = & $exe --list-sdks; $sdks
+          if (-not ($sdks -match '^9\.0\.203')) { throw "SDK 9.0.203 missing" }
+          $rt = Get-ChildItem "$d/shared/Microsoft.NETCore.App" | % Name; "Runtimes: $rt"
+          $extra = $rt | ? { $_ -notlike '9.*' }
+          if ('${{ matrix.skip }}' -eq 'true'  -and $extra)     { throw "Pre-pass ran despite skip: $extra" }
+          if ('${{ matrix.skip }}' -eq 'false' -and -not $extra) { throw "Expected LTS pre-pass runtime, none found" }
+          if ('${{ steps.setup.outputs.dotnet-version }}' -ne '9.0.203') { throw "Bad output: ${{ steps.setup.outputs.dotnet-version }}" }
+
+  # 2. Hosted runner as-is (existing dotnet executable): build and run a real app with skip=true.
+  hosted-build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: v-chiranjib-swain/setup-dotnet@issue-642-optin
+        with:
+          dotnet-version: '9.0.203'
+          skip-lts-prepass: true
+      - shell: pwsh
+        run: |
+          dotnet --info
+          dotnet new console -o app --framework net9.0
+          dotnet run --project app
+
+  # 3. Several versions in one step: each one skips the pre-pass.
+  multi-version:
+    runs-on: ubuntu-latest
+    env:
+      DOTNET_INSTALL_DIR: ${{ github.workspace }}/.dn
+    steps:
+      - uses: v-chiranjib-swain/setup-dotnet@issue-642-optin
+        with:
+          dotnet-version: |
+            8.0.x
+            9.0.x
+          skip-lts-prepass: true
+      - shell: pwsh
+        run: |
+          $d = $env:DOTNET_INSTALL_DIR
+          $sdks = & "$d/dotnet" --list-sdks; $sdks
+          if (-not ($sdks -match '^8\.') -or -not ($sdks -match '^9\.')) { throw "Missing 8.x or 9.x SDK" }
+          $rt = Get-ChildItem "$d/shared/Microsoft.NETCore.App" | % Name; "Runtimes: $rt"
+          $extra = $rt | ? { $_ -notlike '8.*' -and $_ -notlike '9.*' }
+          if ($extra) { throw "Unexpected runtime(s): $extra" }
+
+  # 4. Other ways to specify the version: wildcard, latest + channel, and global.json.
+  version-sources:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {name: wildcard, version: '9.0.x',  channel: '',    gj: false}
+          - {name: latest,   version: 'latest', channel: '9.0', gj: false}
+          - {name: globaljs, version: '',       channel: '',    gj: true}
+    env:
+      DOTNET_INSTALL_DIR: ${{ github.workspace }}/.dn
+    steps:
+      - if: matrix.gj
+        run: echo '{"sdk":{"version":"9.0.203"}}' > global.json
+      - uses: v-chiranjib-swain/setup-dotnet@issue-642-optin
+        with:
+          dotnet-version: ${{ matrix.version }}
+          dotnet-channel: ${{ matrix.channel }}
+          global-json-file: ${{ matrix.gj && 'global.json' || '' }}
+          skip-lts-prepass: true
+      - shell: pwsh
+        run: |
+          $d = $env:DOTNET_INSTALL_DIR
+          & "$d/dotnet" --list-sdks
+          $rt = Get-ChildItem "$d/shared/Microsoft.NETCore.App" | % Name; "Runtimes: $rt"
+          if ($rt | ? { $_ -notlike '9.*' }) { throw "Pre-pass ran ($($env:NAME))" }
+        env:
+          NAME: ${{ matrix.name }}
+
+  # 5. Cross-architecture install (x86 on x64 Windows): files go into <dir>/x86.
+  cross-arch:
+    runs-on: windows-latest
+    env:
+      DOTNET_INSTALL_DIR: ${{ github.workspace }}\.dn
+    steps:
+      - uses: v-chiranjib-swain/setup-dotnet@issue-642-optin
+        with:
+          dotnet-version: '9.0.203'
+          architecture: x86
+          skip-lts-prepass: true
+      - shell: pwsh
+        run: |
+          $d = Join-Path $env:DOTNET_INSTALL_DIR 'x86'
+          if (-not (Test-Path "$d\dotnet.exe")) { throw "x86 dotnet.exe missing" }
+          & "$d\dotnet.exe" --list-sdks
+          $rt = Get-ChildItem "$d\shared\Microsoft.NETCore.App" | % Name; "Runtimes: $rt"
+          if ($rt | ? { $_ -notlike '9.*' }) { throw "Pre-pass ran for x86" }
+
+  # 6. Trade-off: an old SDK on a clean machine leaves an old dotnet host in place. Informational only.
+  old-sdk-host:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    env:
+      DOTNET_INSTALL_DIR: ${{ github.workspace }}/.dn
+    steps:
+      - uses: v-chiranjib-swain/setup-dotnet@issue-642-optin
+        with:
+          dotnet-version: '8.0.x'
+          skip-lts-prepass: true
+      - run: $DOTNET_INSTALL_DIR/dotnet --info | grep -A2 -i "Host"
+
+  # 7. Input handling: an invalid value must fail, and leaving the input out must keep the default (pre-pass runs).
+  input-validation:
+    runs-on: ubuntu-latest
+    env:
+      DOTNET_INSTALL_DIR: ${{ github.workspace }}/.dn
+    steps:
+      - id: bad
+        continue-on-error: true
+        uses: v-chiranjib-swain/setup-dotnet@issue-642-optin
+        with:
+          dotnet-version: '9.0.203'
+          skip-lts-prepass: 'yes'
+      - if: steps.bad.outcome != 'failure'
+        run: { echo "Invalid boolean was accepted"; exit 1; }
+      - uses: v-chiranjib-swain/setup-dotnet@issue-642-optin
+        with:
+          dotnet-version: '9.0.203'
+      - shell: pwsh
+        run: |
+          $rt = Get-ChildItem "$env:DOTNET_INSTALL_DIR/shared/Microsoft.NETCore.App" | % Name; "Runtimes: $rt"
+          if (-not ($rt | ? { $_ -notlike '9.*' })) { throw "Default should run the pre-pass" }
