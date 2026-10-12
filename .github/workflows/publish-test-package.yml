@@ -1,0 +1,35 @@
+name: Publish private test package
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v7
+        with:
+          dotnet-version: 8.x
+
+      - name: Create package
+        run: >
+          dotnet pack ./TestPackage/TestPackage.csproj
+          --configuration Release
+          --output ./artifacts
+
+      - name: Publish package
+        run: >
+          dotnet nuget push
+          ./artifacts/Example.PrivatePackage.1.0.0.nupkg
+          --source https://nuget.pkg.github.com/v-mahabaleshwars/index.json
+          --api-key "${{ secrets.GITHUB_TOKEN }}"
+          --skip-duplicate
