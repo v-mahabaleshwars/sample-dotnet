@@ -13,10 +13,10 @@ jobs:
 
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Install .NET without package authentication
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v7
         with:
           dotnet-version: 8.x
 
@@ -40,11 +40,11 @@ jobs:
         run: rm -rf ./Consumer/obj
 
       - name: Configure source authentication with setup-dotnet
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v7
         with:
           dotnet-version: 8.x
-          source-url: https://nuget.pkg.github.com/YOUR_PACKAGE_OWNER/index.json
-          owner: YOUR_PACKAGE_OWNER
+          source-url: https://nuget.pkg.github.com/v-mahabaleshwars/index.json
+          owner: v-mahabaleshwars
         env:
           NUGET_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
