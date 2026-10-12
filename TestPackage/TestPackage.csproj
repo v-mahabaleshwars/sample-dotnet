@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <PackageId>Example.PrivatePackage</PackageId>
+    <Version>1.0.0</Version>
+    <Authors>v-mahabaleshwars</Authors>
+    <Description>Private package used to test setup-dotnet authentication.</Description>
+    <RepositoryUrl>https://github.com/v-mahabaleshwars/sample-dotnet</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+  </PropertyGroup>
+</Project>
