@@ -1,0 +1,81 @@
+name: Verify setup-dotnet source mapping authentication
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install .NET without package authentication
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.x
+
+      # This establishes that the selected package really requires credentials.
+      - name: Confirm unauthenticated restore fails
+        id: unauthenticated
+        continue-on-error: true
+        run: dotnet restore ./Consumer/Consumer.csproj --no-cache --force-evaluate
+
+      - name: Verify unauthenticated baseline
+        shell: bash
+        run: |
+          if [[ "${{ steps.unauthenticated.outcome }}" != "failure" ]]; then
+            echo "The package restored without authentication."
+            echo "Use a private package that genuinely requires credentials."
+            exit 1
+          fi
+
+      - name: Remove failed restore output
+        shell: bash
+        run: rm -rf ./Consumer/obj
+
+      - name: Configure source authentication with setup-dotnet
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.x
+          source-url: https://nuget.pkg.github.com/YOUR_PACKAGE_OWNER/index.json
+          owner: YOUR_PACKAGE_OWNER
+        env:
+          NUGET_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # Do not add --configfile here. NuGet must read its normal config hierarchy.
+      - name: Restore using setup-dotnet credentials
+        id: action-authentication
+        continue-on-error: true
+        run: dotnet restore ./Consumer/Consumer.csproj --no-cache --force-evaluate
+
+      - name: Remove failed authenticated restore output
+        if: steps.action-authentication.outcome == 'failure'
+        shell: bash
+        run: rm -rf ./Consumer/obj
+
+      # This distinguishes an action bug from an invalid token/package setup.
+      - name: Control restore using explicit source credentials
+        if: steps.action-authentication.outcome == 'failure'
+        env:
+          NuGetPackageSourceCredentials_github: Username=${{ github.actor }};Password=${{ secrets.GITHUB_TOKEN }};ValidAuthenticationTypes=Basic
+        run: dotnet restore ./Consumer/Consumer.csproj --no-cache --force-evaluate
+
+      - name: Report setup-dotnet authentication failure
+        if: steps.action-authentication.outcome == 'failure'
+        shell: bash
+        run: |
+          echo "The explicit credential control succeeded, but setup-dotnet authentication failed."
+          echo "This reproduces the behavior reported in actions/setup-dotnet issue 543."
+          exit 1
+
+      - name: Report success
+        if: steps.action-authentication.outcome == 'success'
+        run: |
+          echo "setup-dotnet authenticated the package source successfully."
+          echo "The original issue scenario is not reproducible with this configuration."
