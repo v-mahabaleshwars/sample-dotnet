@@ -11,9 +11,8 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
         skip: [false, true]
-    env:
-      # Empty folder = "clean machine": no dotnet executable, no SDKs
-      DOTNET_INSTALL_DIR: ${{ github.workspace }}/.dotnet-clean
+    # env:
+    #   DOTNET_INSTALL_DIR: ${{ github.workspace }}/.dotnet-clean
     steps:
       - name: Setup .NET (PR branch)
         uses: v-chiranjib-swain/setup-dotnet@issue-642-optin
