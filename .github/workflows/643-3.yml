@@ -1,0 +1,78 @@
+name: Test skip-lts-prepass
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  skip-lts-prepass:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        case:
+          - { name: skip-true,       version: '9.0.x',            skip: 'true',  extra: '' }
+          - { name: skip-false,      version: '9.0.x',            skip: 'false', extra: '' }
+          - { name: skip-uppercase,  version: '8.0.x',            skip: 'TRUE',  extra: '' }
+          - { name: multi-version,   version: "8.0.x\n9.0.x",     skip: 'true',  extra: '' }
+          - { name: feature-band,    version: '9.0.1xx',          skip: 'true',  extra: '' }
+          - { name: latest-channel,  version: 'latest',           skip: 'true',  extra: 'channel' }
+          - { name: preview-quality, version: '10.0',             skip: 'true',  extra: 'quality' }
+          - { name: no-check-latest, version: '9.0.x',            skip: 'true',  extra: 'nocheck' }
+    name: ${{ matrix.os }} / ${{ matrix.case.name }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Clear toolcache
+        shell: pwsh
+        run: __tests__/clear-toolcache.ps1 ${{ runner.os }}
+
+      - name: Setup dotnet
+        id: setup
+        uses: ./
+        with:
+          dotnet-version: ${{ matrix.case.version }}
+          skip-lts-prepass: ${{ matrix.case.skip }}
+          dotnet-channel: ${{ matrix.case.extra == 'channel' && 'LTS' || '' }}
+          dotnet-quality: ${{ matrix.case.extra == 'quality' && 'preview' || '' }}
+          check-latest: ${{ matrix.case.extra == 'nocheck' && 'false' || 'true' }}
+
+      - name: Verify
+        shell: bash
+        run: |
+          echo "Installed: ${{ steps.setup.outputs.dotnet-version }}"
+          dotnet --info
+          dotnet --list-sdks
+
+  # Edge cases: architecture, global.json, and an invalid boolean
+  edge-cases:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: x86 with skip
+        uses: ./
+        with:
+          dotnet-version: '8.0.x'
+          architecture: x86
+          skip-lts-prepass: true
+
+      - name: global.json with skip
+        shell: bash
+        run: echo '{"sdk":{"version":"9.0.100","rollForward":"latestFeature"}}' > global.json
+      - uses: ./
+        with:
+          skip-lts-prepass: true
+      - run: dotnet --version
+
+      - name: Invalid value (should fail)
+        id: invalid
+        continue-on-error: true
+        uses: ./
+        with:
+          dotnet-version: '9.0.x'
+          skip-lts-prepass: 'yes'
+      - name: Assert invalid value failed
+        if: steps.invalid.outcome != 'failure'
+        run: exit 1
