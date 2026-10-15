@@ -1,0 +1,25 @@
+name: Test setup-dotnet verbose input
+
+on:
+  workflow_dispatch:
+
+jobs:
+  verbose:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Check out PR 542
+        uses: actions/checkout@v7
+
+      - name: Run setup-dotnet with installer verbosity
+        uses: matherm-aboehm/setup-dotnet@verbose
+        with:
+          dotnet-version: 8.0.100
+          verbose: true
+
+      - name: Verify installed SDK
+        shell: bash
+        run: dotnet --list-sdks | grep '^8\.0\.100 '
