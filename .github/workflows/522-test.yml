@@ -18,7 +18,7 @@ jobs:
         uses: matherm-aboehm/setup-dotnet@verbose
         with:
           dotnet-version: 8.0.100
-          verbose: true
+          # verbose: true
 
       - name: Verify installed SDK
         shell: bash
