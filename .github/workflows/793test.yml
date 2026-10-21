@@ -1,0 +1,25 @@
+name: Reproduce setup-dotnet ARM64 crash
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  reproduce:
+    runs-on: windows-11-arm
+    timeout-minutes: 20
+
+    steps:
+      - name: Create global.json
+        shell: cmd
+        run: |
+          echo {"sdk":{"version":"10.0.401","rollForward":"latestFeature"}}>global.json
+
+      - name: Install both SDKs
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68
+        with:
+          global-json-file: global.json
+          dotnet-version: 8.0.x
+          cache: false
