@@ -12,10 +12,8 @@ jobs:
     timeout-minutes: 20
 
     steps:
-      - name: Create global.json
-        shell: cmd
-        run: |
-          echo {"sdk":{"version":"10.0.401","rollForward":"latestFeature"}}>global.json
+      - name: Checkout
+        uses: actions/checkout@v7
 
       - name: Install both SDKs
         uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68
