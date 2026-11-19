@@ -36,7 +36,7 @@ jobs:
       - name: Set up .NET (PR 803)
         if: matrix.impl == 'pr'
         id: pr
-        uses: kamronbatman/setup-dotnet/tree@latest-major-sts
+        uses: kamronbatman/setup-dotnet/fix@latest-major-sts
         with:
           global-json-file: global.json
 
