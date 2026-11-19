@@ -1,0 +1,47 @@
+name: Validate setup-dotnet PR 803
+on: workflow_dispatch
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: ${{ matrix.impl }} / ${{ matrix.case.name }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        impl: [base, pr]
+        case:
+          - name: minimum-above-newest-sdk
+            json: '{"sdk":{"version":"11.0.999","rollForward":"latestMajor"}}'
+          - name: no-sdk-version
+            json: '{"test":{"runner":"Microsoft.Testing.Platform"}}'
+          - name: lts-to-sts
+            json: '{"sdk":{"version":"10.0.100","rollForward":"latestMajor"}}'
+    steps:
+      - name: Prepare a clean install directory and global.json
+        run: |
+          echo "DOTNET_INSTALL_DIR=$RUNNER_TEMP/dotnet" >> "$GITHUB_ENV"
+          echo '${{ matrix.case.json }}' > global.json
+          cat global.json
+
+      - name: Set up .NET (current main)
+        if: matrix.impl == 'base'
+        id: base
+        uses: actions/setup-dotnet@main
+        with:
+          global-json-file: global.json
+
+      - name: Set up .NET (PR 803)
+        if: matrix.impl == 'pr'
+        id: pr
+        uses: kamronbatman/setup-dotnet/tree@latest-major-sts
+        with:
+          global-json-file: global.json
+
+      - name: Report
+        run: |
+          echo "Action output: ${{ steps.base.outputs.dotnet-version }}${{ steps.pr.outputs.dotnet-version }}"
+          dotnet --list-sdks
+          dotnet --version
