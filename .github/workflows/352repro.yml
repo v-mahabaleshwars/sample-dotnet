@@ -9,20 +9,9 @@ permissions:
 jobs:
   reproduce:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
-    env:
-      DOTNET_MULTILEVEL_LOOKUP: '0'
-      DOTNET_CLI_TELEMETRY_OPTOUT: '1'
-      DOTNET_NOLOGO: '1'
     steps:
-      - name: Isolate version installation
-        shell: bash
-        run: |
-          set -euo pipefail
-          install_dir="$RUNNER_TEMP/version-semver-range"
-          test ! -e "$install_dir"
-          test ! -e "$GITHUB_WORKSPACE/global.json"
-          printf 'DOTNET_INSTALL_DIR=%s\n' "$install_dir" >> "$GITHUB_ENV"
+      - name: checkout
+        uses: actions/checkout@main
       - name: Pass unsupported semver range to dotnet-version
         id: setup
         uses: actions/setup-dotnet@v6
@@ -32,29 +21,4 @@ jobs:
           skip-lts-prepass: true
           cache: false
 
-      - name: Print actual version resolution
-        shell: bash
-        run: |
-          set -euo pipefail
-          executable="$DOTNET_INSTALL_DIR/dotnet"
-          test -x "$executable"
-          versions="$("$executable" --list-versions)"
-          printf '%s\n' "$versions"
-          version="$(awk '$1 == "Microsoft.NETCore.App" {print $2; exit}' <<< "$versions")"
-          if [ -z "$version" ]; then
-            echo 'No Microsoft.NETCore.App version was installed.' >&2
-            exit 1
-          fi
-          major="${version%%.*}"
-          {
-            echo '## version version-range reproduction'
-            echo
-            echo '- Input: `dotnet-version: ^8.0.0`'
-            echo "- Installed base version: \`$version\`"
-            if [ "$major" != 8 ]; then
-              echo '- Result: the unsupported range was accepted and resolved outside .NET 8.'
-            else
-              echo '- Result: the input was accepted and installed a .NET 8 version; inspect action logs to see how it resolved.'
-            fi
-          } >> "$GITHUB_STEP_SUMMARY"
-          echo "Observed Microsoft.NETCore.App version: $version"
+    
