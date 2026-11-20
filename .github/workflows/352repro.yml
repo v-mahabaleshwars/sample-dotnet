@@ -1,4 +1,4 @@
-name: Internal PR 3 - runtime semver range input reproduction
+name: Internal PR 3 - version semver range input reproduction
 
 on:
   workflow_dispatch:
@@ -15,46 +15,46 @@ jobs:
       DOTNET_CLI_TELEMETRY_OPTOUT: '1'
       DOTNET_NOLOGO: '1'
     steps:
-      - name: Isolate runtime installation
+      - name: Isolate version installation
         shell: bash
         run: |
           set -euo pipefail
-          install_dir="$RUNNER_TEMP/runtime-semver-range"
+          install_dir="$RUNNER_TEMP/version-semver-range"
           test ! -e "$install_dir"
           test ! -e "$GITHUB_WORKSPACE/global.json"
           printf 'DOTNET_INSTALL_DIR=%s\n' "$install_dir" >> "$GITHUB_ENV"
-      - name: Pass unsupported semver range to dotnet-runtime
+      - name: Pass unsupported semver range to dotnet-version
         id: setup
         uses: actions/setup-dotnet@v6
         with:
-          dotnet-runtime: '^8.0.0'
+          dotnet-version: '^8.0.0'
           check-latest: true
           skip-lts-prepass: true
           cache: false
 
-      - name: Print actual runtime resolution
+      - name: Print actual version resolution
         shell: bash
         run: |
           set -euo pipefail
           executable="$DOTNET_INSTALL_DIR/dotnet"
           test -x "$executable"
-          runtimes="$("$executable" --list-runtimes)"
-          printf '%s\n' "$runtimes"
-          version="$(awk '$1 == "Microsoft.NETCore.App" {print $2; exit}' <<< "$runtimes")"
+          versions="$("$executable" --list-versions)"
+          printf '%s\n' "$versions"
+          version="$(awk '$1 == "Microsoft.NETCore.App" {print $2; exit}' <<< "$versions")"
           if [ -z "$version" ]; then
-            echo 'No Microsoft.NETCore.App runtime was installed.' >&2
+            echo 'No Microsoft.NETCore.App version was installed.' >&2
             exit 1
           fi
           major="${version%%.*}"
           {
-            echo '## Runtime version-range reproduction'
+            echo '## version version-range reproduction'
             echo
-            echo '- Input: `dotnet-runtime: ^8.0.0`'
-            echo "- Installed base runtime: \`$version\`"
+            echo '- Input: `dotnet-version: ^8.0.0`'
+            echo "- Installed base version: \`$version\`"
             if [ "$major" != 8 ]; then
               echo '- Result: the unsupported range was accepted and resolved outside .NET 8.'
             else
-              echo '- Result: the input was accepted and installed a .NET 8 runtime; inspect action logs to see how it resolved.'
+              echo '- Result: the input was accepted and installed a .NET 8 version; inspect action logs to see how it resolved.'
             fi
           } >> "$GITHUB_STEP_SUMMARY"
           echo "Observed Microsoft.NETCore.App version: $version"
