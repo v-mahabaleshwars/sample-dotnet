@@ -1,0 +1,85 @@
+name: Test setup-dotnet PR 803
+
+on:
+  workflow_dispatch:
+
+jobs:
+  previous-version:
+    name: Previous v6 behavior
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create global.json
+        shell: bash
+        run: |
+          cat > global.json <<'EOF'
+          {
+            "sdk": {
+              "version": "11.0.100",
+              "rollForward": "latestMajor",
+              "allowPrerelease": false
+            }
+          }
+          EOF
+
+      - name: Run previous setup-dotnet
+        id: setup
+        uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+          check-latest: true
+
+      - name: Report previous behavior
+        shell: bash
+        run: |
+          echo "### Previous action" >> "$GITHUB_STEP_SUMMARY"
+          echo "- setup-dotnet output: \`${{ steps.setup.outputs.dotnet-version }}\`" >> "$GITHUB_STEP_SUMMARY"
+
+          set +e
+          dotnet_output=$(dotnet --version 2>&1)
+          dotnet_status=$?
+          set -e
+
+          echo "- dotnet --version status: \`$dotnet_status\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- dotnet --version: \`$dotnet_output\`" >> "$GITHUB_STEP_SUMMARY"
+
+  pr-version:
+    name: PR 803 behavior
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create global.json
+        shell: bash
+        run: |
+          cat > global.json <<'EOF'
+          {
+            "sdk": {
+              "version": "11.0.100",
+              "rollForward": "latestMajor",
+              "allowPrerelease": false
+            }
+          }
+          EOF
+
+      - name: Run PR 803
+        id: setup
+        uses: kamronbatman/setup-dotnet@e52d8212e2e1494a96dc9a736b9dd80120ccad12
+        with:
+          global-json-file: global.json
+          check-latest: true
+
+      - name: Report PR behavior
+        shell: bash
+        run: |
+          echo "### PR 803 action" >> "$GITHUB_STEP_SUMMARY"
+          echo "- setup-dotnet output: \`${{ steps.setup.outputs.dotnet-version }}\`" >> "$GITHUB_STEP_SUMMARY"
+
+          dotnet_output=$(dotnet --version)
+          echo "- dotnet --version status: \`0\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- dotnet --version: \`$dotnet_output\`" >> "$GITHUB_STEP_SUMMARY"
+
+          major="${dotnet_output%%.*}"
+          if [[ "$major" -ge 11 ]]; then
+            echo "- Minimum check: **PASS** (major $major is >= 11)" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "- Minimum check: **FAIL** (major $major is below 11)" >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
