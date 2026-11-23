@@ -172,7 +172,7 @@ jobs:
             cat > global.json <<'EOF'
             {
               "sdk": {
-                "version": "11.0.100-preview.1",
+                "version": "10.0.100-preview.1",
                 "allowPrerelease": true
               }
             }
@@ -195,8 +195,8 @@ jobs:
             echo "- Action output: \`${{ steps.setup.outputs.dotnet-version }}\`" >> "$GITHUB_STEP_SUMMARY"
             echo "- dotnet --version: \`$selected\`" >> "$GITHUB_STEP_SUMMARY"
   
-            if [[ "$selected" != "11.0.100-preview.1" ]]; then
-              echo "- Result: **FAIL** — expected exact preview 11.0.100-preview.1, got $selected." >> "$GITHUB_STEP_SUMMARY"
+            if [[ "$selected" != "10.0.100-preview.1" ]]; then
+              echo "- Result: **FAIL** — expected exact preview 10.0.100-preview.1, got $selected." >> "$GITHUB_STEP_SUMMARY"
               exit 1
             fi
   
