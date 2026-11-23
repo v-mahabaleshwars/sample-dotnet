@@ -163,39 +163,41 @@ jobs:
           echo "- Expected: unchanged LTS fallback behavior." >> "$GITHUB_STEP_SUMMARY"
 
   pr-pinned-prerelease:
-    name: PR pinned prerelease remains exact
-    runs-on: ubuntu-latest
-    steps:
-      - name: Create global.json
-        run: |
-          cat > global.json <<'EOF'
-          {
-            "sdk": {
-              "version": "8.0.100-preview.1",
-              "allowPrerelease": true
+      name: PR pinned prerelease remains exact
+      runs-on: ubuntu-latest
+      steps:
+        - name: Create global.json
+          shell: bash
+          run: |
+            cat > global.json <<'EOF'
+            {
+              "sdk": {
+                "version": "11.0.100-preview.1",
+                "allowPrerelease": true
+              }
             }
-          }
-          EOF
-
-      - name: Run PR 803
-        id: setup
-        uses: kamronbatman/setup-dotnet@e52d8212e2e1494a96dc9a736b9dd80120ccad12
-        with:
-          global-json-file: global.json
-          check-latest: true
-
-      - name: Verify exact prerelease
-        shell: bash
-        run: |
-          selected=$(dotnet --version)
-
-          echo "### PR 803: pinned prerelease" >> "$GITHUB_STEP_SUMMARY"
-          echo "- Action output: \`${{ steps.setup.outputs.dotnet-version }}\`" >> "$GITHUB_STEP_SUMMARY"
-          echo "- dotnet --version: \`$selected\`" >> "$GITHUB_STEP_SUMMARY"
-
-          if [[ "$selected" != "8.0.100-preview.1" ]]; then
-            echo "- Result: **FAIL** — prerelease was not pinned exactly." >> "$GITHUB_STEP_SUMMARY"
-            exit 1
-          fi
-
-          echo "- Result: **PASS** — exact pinned prerelease was retained." >> "$GITHUB_STEP_SUMMARY"
+            EOF
+  
+        - name: Run PR 803
+          id: setup
+          uses: kamronbatman/setup-dotnet@e52d8212e2e1494a96dc9a736b9dd80120ccad12
+          with:
+            global-json-file: global.json
+            dotnet-quality: preview
+            check-latest: true
+  
+        - name: Verify exact prerelease
+          shell: bash
+          run: |
+            selected=$(dotnet --version)
+  
+            echo "### PR 803: pinned prerelease" >> "$GITHUB_STEP_SUMMARY"
+            echo "- Action output: \`${{ steps.setup.outputs.dotnet-version }}\`" >> "$GITHUB_STEP_SUMMARY"
+            echo "- dotnet --version: \`$selected\`" >> "$GITHUB_STEP_SUMMARY"
+  
+            if [[ "$selected" != "11.0.100-preview.1" ]]; then
+              echo "- Result: **FAIL** — expected exact preview 11.0.100-preview.1, got $selected." >> "$GITHUB_STEP_SUMMARY"
+              exit 1
+            fi
+  
+            echo "- Result: **PASS** — exact pinned prerelease was retained." >> "$GITHUB_STEP_SUMMARY"
